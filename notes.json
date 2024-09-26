@@ -1,0 +1,20 @@
+[
+  {
+    "content": "Double-click to edit me!",
+    "size": "small",
+    "left": "853px",
+    "top": "299px"
+  },
+  {
+    "content": "Double-click to edit me!",
+    "size": "normal",
+    "left": "1087px",
+    "top": "212px"
+  },
+  {
+    "content": "Double-click to edit me!",
+    "size": "large",
+    "left": "1340px",
+    "top": "276px"
+  }
+]
