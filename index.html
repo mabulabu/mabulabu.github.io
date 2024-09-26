@@ -27,6 +27,26 @@
             cursor: pointer;
         }
 
+        .delete-area {
+            width: 100px;
+            height: 50px;
+            background-color: red;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: not-allowed;
+        }
+
+        .save-button {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: green;
+            color: white;
+        }
+
         .text-box {
             position: absolute;
             padding: 10px;
@@ -57,56 +77,104 @@
     </style>
 </head>
 <body>
-    <!-- Toolbar with buttons to add different sized text boxes -->
+    <!-- Toolbar with buttons to add different sized text boxes and delete area -->
     <div class="toolbar">
         <button class="add-button" onclick="addBox('small')">+ Small Box</button>
         <button class="add-button" onclick="addBox('normal')">+ Normal Box</button>
         <button class="add-button" onclick="addBox('large')">+ Large Box</button>
+        <div class="delete-area" id="deleteArea">Delete</div>
+        <button class="save-button" onclick="saveToFile()">Save</button>
     </div>
 
     <script>
+        let currentDraggedElement = null;
+
+        // Load saved notes from GitHub repository when the page loads
+        window.onload = function() {
+            loadBoxes();
+        };
+
+        // Save all notes to local storage
+        function saveBoxes() {
+            const boxes = document.querySelectorAll('.text-box');
+            const data = [];
+
+            boxes.forEach(box => {
+                data.push({
+                    content: box.innerText,
+                    size: box.classList.contains('small') ? 'small' : box.classList.contains('large') ? 'large' : 'normal',
+                    left: box.style.left,
+                    top: box.style.top
+                });
+            });
+
+            localStorage.setItem('boxes', JSON.stringify(data));
+        }
+
+        // Load notes from GitHub repository or fallback to local storage
+        async function loadBoxes() {
+            try {
+                // Replace with the correct URL to your notes.json file on GitHub
+                const response = await fetch('https://raw.githubusercontent.com/mabulabu/mabulabu.github.io/main/notes.json');
+                if (!response.ok) throw new Error('Failed to fetch saved notes');
+                const savedData = await response.json();
+
+                savedData.forEach(item => {
+                    addBox(item.size, item.content, item.left, item.top);
+                });
+            } catch (error) {
+                console.error('Error loading saved notes from GitHub:', error);
+                // Fallback: Load from localStorage if GitHub fetch fails
+                const savedData = JSON.parse(localStorage.getItem('boxes') || '[]');
+                savedData.forEach(item => {
+                    addBox(item.size, item.content, item.left, item.top);
+                });
+            }
+        }
+
         // Function to create and add a new draggable text box to the page
-        function addBox(size) {
-            // Create a new div for the text box
+        function addBox(size, content = 'Double-click to edit me!', left = '50px', top = '50px') {
             const textBox = document.createElement('div');
             textBox.classList.add('text-box', size);
-            textBox.innerText = 'Double-click to edit me!';
+            textBox.innerText = content;
+            textBox.style.left = left;
+            textBox.style.top = top;
 
-            // Add event listeners for drag and text editing
             textBox.addEventListener('mousedown', (event) => dragElement(event, textBox));
             textBox.addEventListener('dblclick', () => enableEditing(textBox));
+            textBox.addEventListener('input', saveBoxes); // Save on text change
+            textBox.addEventListener('mouseup', saveBoxes); // Save on move
+            textBox.setAttribute('draggable', true);
+            textBox.addEventListener('dragstart', (event) => {
+                currentDraggedElement = textBox;
+            });
 
-            // Append the new text box to the body
             document.body.appendChild(textBox);
         }
 
         // Function to enable dragging of the text box
         function dragElement(event, element) {
-            // Prevent drag if text editing is enabled
             if (element.isContentEditable) return;
 
             event.preventDefault();
             let shiftX = event.clientX - element.getBoundingClientRect().left;
             let shiftY = event.clientY - element.getBoundingClientRect().top;
 
-            // Move the element to the current mouse position
             function moveAt(pageX, pageY) {
                 element.style.left = pageX - shiftX + 'px';
                 element.style.top = pageY - shiftY + 'px';
             }
 
-            // Attach the mousemove event when dragging starts
             function onMouseMove(event) {
                 moveAt(event.pageX, event.pageY);
             }
 
-            // Add mousemove event listener to track mouse movements
             document.addEventListener('mousemove', onMouseMove);
 
-            // Remove the event listeners when mouse button is released
             element.onmouseup = function() {
                 document.removeEventListener('mousemove', onMouseMove);
                 element.onmouseup = null;
+                saveBoxes();
             };
         }
 
@@ -114,11 +182,8 @@
         function enableEditing(element) {
             element.contentEditable = true;
             element.focus();
-
-            // Disable dragging while editing
             element.style.cursor = 'text';
 
-            // Stop editing on blur or enter key press
             element.addEventListener('blur', disableEditing);
             element.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
@@ -132,9 +197,47 @@
         function disableEditing(event) {
             const element = event.target;
             element.contentEditable = false;
-            element.style.cursor = 'move'; // Re-enable dragging cursor
+            element.style.cursor = 'move';
             element.removeEventListener('blur', disableEditing);
+            saveBoxes();
         }
+
+        // Function to save the current state to a file
+        function saveToFile() {
+            const boxes = document.querySelectorAll('.text-box');
+            const data = [];
+
+            boxes.forEach(box => {
+                data.push({
+                    content: box.innerText,
+                    size: box.classList.contains('small') ? 'small' : box.classList.contains('large') ? 'large' : 'normal',
+                    left: box.style.left,
+                    top: box.style.top
+                });
+            });
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'notes.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        document.getElementById('deleteArea').addEventListener('dragover', (event) => {
+            event.preventDefault();
+        });
+
+        document.getElementById('deleteArea').addEventListener('drop', () => {
+            if (currentDraggedElement) {
+                currentDraggedElement.remove();
+                currentDraggedElement = null;
+                saveBoxes();
+            }
+        });
     </script>
 </body>
 </html>
