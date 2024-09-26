@@ -36,6 +36,8 @@
             cursor: move;
             resize: none;
             overflow: auto;
+            font-weight: bold;
+            font-size: 16px;
         }
 
         .small {
@@ -67,14 +69,12 @@
         function addBox(size) {
             // Create a new div for the text box
             const textBox = document.createElement('div');
-            textBox.contentEditable = true;
             textBox.classList.add('text-box', size);
-            textBox.innerText = 'Edit me!';
+            textBox.innerText = 'Double-click to edit me!';
 
-            // Add mousedown event listener to make the text box draggable
-            textBox.onmousedown = function(event) {
-                dragElement(event, textBox);
-            };
+            // Add event listeners for drag and text editing
+            textBox.addEventListener('mousedown', (event) => dragElement(event, textBox));
+            textBox.addEventListener('dblclick', () => enableEditing(textBox));
 
             // Append the new text box to the body
             document.body.appendChild(textBox);
@@ -82,6 +82,9 @@
 
         // Function to enable dragging of the text box
         function dragElement(event, element) {
+            // Prevent drag if text editing is enabled
+            if (element.isContentEditable) return;
+
             event.preventDefault();
             let shiftX = event.clientX - element.getBoundingClientRect().left;
             let shiftY = event.clientY - element.getBoundingClientRect().top;
@@ -92,12 +95,12 @@
                 element.style.top = pageY - shiftY + 'px';
             }
 
-            // Add mousemove event listener to track mouse movements
+            // Attach the mousemove event when dragging starts
             function onMouseMove(event) {
                 moveAt(event.pageX, event.pageY);
             }
 
-            // Attach the mousemove event when dragging starts
+            // Add mousemove event listener to track mouse movements
             document.addEventListener('mousemove', onMouseMove);
 
             // Remove the event listeners when mouse button is released
@@ -105,6 +108,32 @@
                 document.removeEventListener('mousemove', onMouseMove);
                 element.onmouseup = null;
             };
+        }
+
+        // Function to enable text editing on double click
+        function enableEditing(element) {
+            element.contentEditable = true;
+            element.focus();
+
+            // Disable dragging while editing
+            element.style.cursor = 'text';
+
+            // Stop editing on blur or enter key press
+            element.addEventListener('blur', disableEditing);
+            element.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    element.blur();
+                }
+            });
+        }
+
+        // Function to disable editing
+        function disableEditing(event) {
+            const element = event.target;
+            element.contentEditable = false;
+            element.style.cursor = 'move'; // Re-enable dragging cursor
+            element.removeEventListener('blur', disableEditing);
         }
     </script>
 </body>
