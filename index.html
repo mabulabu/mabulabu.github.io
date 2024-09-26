@@ -4,10 +4,108 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Personal Notes</title>
+    <title>Draggable Notes</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background-color: white;
+        }
+
+        .toolbar {
+            margin: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .add-button {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .text-box {
+            position: absolute;
+            padding: 10px;
+            border: 2px solid #000;
+            background-color: #87CEEB;
+            color: #000;
+            cursor: move;
+            resize: none;
+            overflow: auto;
+        }
+
+        .small {
+            width: 100px;
+            height: 50px;
+        }
+
+        .normal {
+            width: 150px;
+            height: 100px;
+        }
+
+        .large {
+            width: 200px;
+            height: 150px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to My Notes</h1>
-    <p>This is a simple site for my personal notes.</p>
+    <!-- Toolbar with buttons to add different sized text boxes -->
+    <div class="toolbar">
+        <button class="add-button" onclick="addBox('small')">+ Small Box</button>
+        <button class="add-button" onclick="addBox('normal')">+ Normal Box</button>
+        <button class="add-button" onclick="addBox('large')">+ Large Box</button>
+    </div>
+
+    <script>
+        // Function to create and add a new draggable text box to the page
+        function addBox(size) {
+            // Create a new div for the text box
+            const textBox = document.createElement('div');
+            textBox.contentEditable = true;
+            textBox.classList.add('text-box', size);
+            textBox.innerText = 'Edit me!';
+
+            // Add mousedown event listener to make the text box draggable
+            textBox.onmousedown = function(event) {
+                dragElement(event, textBox);
+            };
+
+            // Append the new text box to the body
+            document.body.appendChild(textBox);
+        }
+
+        // Function to enable dragging of the text box
+        function dragElement(event, element) {
+            event.preventDefault();
+            let shiftX = event.clientX - element.getBoundingClientRect().left;
+            let shiftY = event.clientY - element.getBoundingClientRect().top;
+
+            // Move the element to the current mouse position
+            function moveAt(pageX, pageY) {
+                element.style.left = pageX - shiftX + 'px';
+                element.style.top = pageY - shiftY + 'px';
+            }
+
+            // Add mousemove event listener to track mouse movements
+            function onMouseMove(event) {
+                moveAt(event.pageX, event.pageY);
+            }
+
+            // Attach the mousemove event when dragging starts
+            document.addEventListener('mousemove', onMouseMove);
+
+            // Remove the event listeners when mouse button is released
+            element.onmouseup = function() {
+                document.removeEventListener('mousemove', onMouseMove);
+                element.onmouseup = null;
+            };
+        }
+    </script>
 </body>
 </html>
