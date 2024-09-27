@@ -80,7 +80,7 @@
         <button class="add-button" onclick="addBox('small')">+ Small Box</button>
         <button class="add-button" onclick="addBox('normal')">+ Normal Box</button>
         <button class="add-button" onclick="addBox('large')">+ Large Box</button>
-        <button class="add-button" onclick="saveBoxes()">Save</button>
+        <button class="add-button" onclick="saveToFile()">Save</button>
     </div>
 
     <script>
@@ -104,8 +104,13 @@
             }
         }
 
-        // Save all notes by downloading the data as a JSON file for manual upload
-        function saveBoxes() {
+        // Save all notes and trigger file download
+        function saveToFile() {
+            saveBoxes(true); // Save and show alert to user
+        }
+
+        // Save all notes to local storage and optionally trigger download
+        function saveBoxes(showAlert = false) {
             const boxes = document.querySelectorAll('.text-box');
             const data = [];
 
@@ -118,18 +123,22 @@
                 });
             });
 
-            // Create a JSON blob and trigger download for manual upload to GitHub
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'notes.json'; // This will download the updated notes.json file
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            localStorage.setItem('boxes', JSON.stringify(data)); // Save data to local storage
 
-            alert("Save successful! Upload 'notes.json' to your GitHub repository to update the site.");
+            if (showAlert) {
+                // Create a JSON blob and trigger download for manual upload to GitHub
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'notes.json'; // This will download the updated notes.json file
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                alert("Save successful! Upload 'notes.json' to your GitHub repository to update the site.");
+            }
         }
 
         // Function to create and add a new draggable text box to the page
@@ -148,7 +157,7 @@
             deleteButton.onclick = (event) => {
                 event.stopPropagation();
                 textBox.remove();
-                saveBoxes();
+                saveBoxes(); // Save immediately after deleting
             };
             textBox.appendChild(deleteButton);
 
@@ -225,4 +234,3 @@
     </script>
 </body>
 </html>
-
