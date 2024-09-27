@@ -56,6 +56,8 @@
             align-items: center;
             justify-content: center;
             border-radius: 50%;
+            user-select: none; /* Prevents text selection on the button */
+            pointer-events: auto; /* Ensures the button is clickable even when the text box is editable */
         }
 
         .small {
@@ -116,7 +118,7 @@
 
             boxes.forEach(box => {
                 data.push({
-                    content: box.innerText,
+                    content: box.innerText.replace('X', '').trim(), // Exclude the delete button text
                     size: box.classList.contains('small') ? 'small' : box.classList.contains('large') ? 'large' : 'normal',
                     left: box.style.left,
                     top: box.style.top
@@ -160,6 +162,9 @@
                 saveBoxes(false); // Save without showing the alert
             };
             textBox.appendChild(deleteButton);
+
+            // Prevent deletion of the delete button itself during text editing
+            deleteButton.contentEditable = false;
 
             // Add event listeners for drag and text editing
             textBox.addEventListener('mousedown', (event) => dragElement(event, textBox));
@@ -234,4 +239,3 @@
     </script>
 </body>
 </html>
-
