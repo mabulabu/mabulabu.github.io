@@ -56,8 +56,8 @@
             align-items: center;
             justify-content: center;
             border-radius: 50%;
-            user-select: none; /* Prevents text selection on the button */
-            pointer-events: auto; /* Ensures the button is clickable even when the text box is editable */
+            user-select: none;
+            pointer-events: auto;
         }
 
         .small {
@@ -98,7 +98,6 @@
                 });
             } catch (error) {
                 console.error('Error loading saved notes from GitHub:', error);
-                // Fallback: Load from localStorage if GitHub fetch fails
                 const savedData = JSON.parse(localStorage.getItem('boxes') || '[]');
                 savedData.forEach(item => {
                     addBox(item.size, item.content, item.left, item.top);
@@ -117,23 +116,27 @@
             const data = [];
 
             boxes.forEach(box => {
+                const deleteButton = box.querySelector('.delete-button');
+                deleteButton.remove(); // Temporarily remove the delete button before saving
+
                 data.push({
-                    content: box.innerText.replace('X', '').trim(), // Exclude the delete button text
+                    content: box.innerText.trim(), // Save only the text content
                     size: box.classList.contains('small') ? 'small' : box.classList.contains('large') ? 'large' : 'normal',
                     left: box.style.left,
                     top: box.style.top
                 });
+
+                box.appendChild(deleteButton); // Reattach the delete button after saving
             });
 
             localStorage.setItem('boxes', JSON.stringify(data)); // Save data to local storage
 
             if (showAlert) {
-                // Create a JSON blob and trigger download for manual upload to GitHub
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'notes.json'; // This will download the updated notes.json file
+                a.download = 'notes.json';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -145,12 +148,13 @@
 
         // Function to create and add a new draggable text box to the page
         function addBox(size, content = 'Double-click to edit me!', left = '50px', top = '50px') {
-            // Create a new div for the text box
             const textBox = document.createElement('div');
             textBox.classList.add('text-box', size);
-            textBox.innerText = content;
             textBox.style.left = left;
             textBox.style.top = top;
+
+            // If the content is empty, show placeholder text to allow typing
+            textBox.innerText = content || 'Double-click to edit me!';
 
             // Create a delete button inside the text box
             const deleteButton = document.createElement('button');
@@ -169,8 +173,8 @@
             // Add event listeners for drag and text editing
             textBox.addEventListener('mousedown', (event) => dragElement(event, textBox));
             textBox.addEventListener('dblclick', () => enableEditing(textBox));
-            textBox.addEventListener('input', () => saveBoxes(false)); // Save on text change without alert
-            textBox.addEventListener('mouseup', () => saveBoxes(false)); // Save on move without alert
+            textBox.addEventListener('input', () => saveBoxes(false));
+            textBox.addEventListener('mouseup', () => saveBoxes(false));
 
             // Append the new text box to the body
             document.body.appendChild(textBox);
@@ -178,32 +182,27 @@
 
         // Function to enable dragging of the text box
         function dragElement(event, element) {
-            // Prevent drag if text editing is enabled
             if (element.isContentEditable) return;
 
             event.preventDefault();
             let shiftX = event.clientX - element.getBoundingClientRect().left;
             let shiftY = event.clientY - element.getBoundingClientRect().top;
 
-            // Move the element to the current mouse position
             function moveAt(pageX, pageY) {
                 element.style.left = pageX - shiftX + 'px';
                 element.style.top = pageY - shiftY + 'px';
             }
 
-            // Attach the mousemove event when dragging starts
             function onMouseMove(event) {
                 moveAt(event.pageX, event.pageY);
             }
 
-            // Add mousemove event listener to track mouse movements
             document.addEventListener('mousemove', onMouseMove);
 
-            // Remove the event listeners when mouse button is released
             element.onmouseup = function() {
                 document.removeEventListener('mousemove', onMouseMove);
                 element.onmouseup = null;
-                saveBoxes(false); // Save position after dragging without alert
+                saveBoxes(false);
             };
         }
 
@@ -211,11 +210,12 @@
         function enableEditing(element) {
             element.contentEditable = true;
             element.focus();
-
-            // Disable dragging while editing
             element.style.cursor = 'text';
 
-            // Stop editing on blur or enter key press
+            // Prevent the delete button from being edited or interfering
+            const deleteButton = element.querySelector('.delete-button');
+            deleteButton.style.pointerEvents = 'none';
+
             element.addEventListener('blur', disableEditing);
             element.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
@@ -229,9 +229,13 @@
         function disableEditing(event) {
             const element = event.target;
             element.contentEditable = false;
-            element.style.cursor = 'move'; // Re-enable dragging cursor
-            element.removeEventListener('blur', disableEditing);
-            saveBoxes(false); // Save content after editing without alert
+            element.style.cursor = 'move';
+
+            // Restore delete button interaction
+            const deleteButton = element.querySelector('.delete-button');
+            deleteButton.style.pointerEvents = 'auto';
+
+            saveBoxes(false);
         }
 
         // Load the boxes when the page is loaded
@@ -239,3 +243,4 @@
     </script>
 </body>
 </html>
+
