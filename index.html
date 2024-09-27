@@ -157,15 +157,15 @@
             deleteButton.onclick = (event) => {
                 event.stopPropagation();
                 textBox.remove();
-                saveBoxes(); // Save immediately after deleting
+                saveBoxes(false); // Save without showing the alert
             };
             textBox.appendChild(deleteButton);
 
             // Add event listeners for drag and text editing
             textBox.addEventListener('mousedown', (event) => dragElement(event, textBox));
             textBox.addEventListener('dblclick', () => enableEditing(textBox));
-            textBox.addEventListener('input', saveBoxes); // Save on text change
-            textBox.addEventListener('mouseup', saveBoxes); // Save on move
+            textBox.addEventListener('input', () => saveBoxes(false)); // Save on text change without alert
+            textBox.addEventListener('mouseup', () => saveBoxes(false)); // Save on move without alert
 
             // Append the new text box to the body
             document.body.appendChild(textBox);
@@ -198,7 +198,7 @@
             element.onmouseup = function() {
                 document.removeEventListener('mousemove', onMouseMove);
                 element.onmouseup = null;
-                saveBoxes(); // Save position after dragging
+                saveBoxes(false); // Save position after dragging without alert
             };
         }
 
@@ -226,7 +226,7 @@
             element.contentEditable = false;
             element.style.cursor = 'move'; // Re-enable dragging cursor
             element.removeEventListener('blur', disableEditing);
-            saveBoxes(); // Save content after editing
+            saveBoxes(false); // Save content after editing without alert
         }
 
         // Load the boxes when the page is loaded
@@ -234,3 +234,4 @@
     </script>
 </body>
 </html>
+
